@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工事仕様書作成SPA</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:"Yu Gothic",sans-serif;
+}
+
+body{
+    background:#f5f7fa;
+    padding:20px;
+}
+
+.container{
+    display:grid;
+    grid-template-columns:500px 1fr;
+    gap:20px;
+}
+
+.panel{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+h1{
+    margin-bottom:15px;
+}
+
+h2{
+    margin-bottom:10px;
+    margin-top:20px;
+    font-size:16px;
+    border-bottom:2px solid #007bff;
+    padding-bottom:5px;
+}
+
+.form-group{
+    margin-bottom:15px;
+}
+
+label{
+    font-weight:bold;
+    display:block;
+    margin-bottom:5px;
+}
+
+input,textarea{
+    width:100%;
+    padding:10px;
+    border:1px solid #ccc;
+    border-radius:5px;
+    font-family:"Yu Gothic",sans-serif;
+}
+
+textarea{
+    resize:vertical;
+    min-height:60px;
+}
+
+button{
+    padding:10px 15px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+    color:white;
+    margin-right:5px;
+    margin-top:5px;
+}
+
+.btn-save{
+    background:#28a745;
+}
+
+.btn-load{
+    background:#007bff;
+}
+
+.btn-pdf{
+    background:#dc3545;
+}
+
+.btn-add{
+    background:#17a2b8;
+    padding:8px 12px;
+    font-size:14px;
+}
+
+.btn-remove{
+    background:#6c757d;
+    padding:6px 10px;
+    font-size:12px;
+    margin:0;
+}
+
+.contact-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:10px;
+    align-items:flex-end;
+}
+
+.contact-row input{
+    flex:1;
+}
+
+.contact-row .btn-remove{
+    width:60px;
+}
+
+.preview-sheet{
+    background:white;
+    border:1px solid #ccc;
+    padding:40px;
+    min-height:1000px;
+}
+
+.preview-title{
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+    margin-bottom:40px;
+}
+
+.info-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:30px;
+}
+
+.info-table th,
+.info-table td{
+    border:1px solid #000;
+    padding:12px;
+}
+
+.info-table th{
+    width:220px;
+    background:#f0f0f0;
+}
+
+.section-title{
+    font-size:16px;
+    font-weight:bold;
+    margin-bottom:10px;
+    margin-top:30px;
+    border-bottom:1px solid #000;
+    padding-bottom:5px;
+}
+
+.contact-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:30px;
+}
+
+.contact-table th,
+.contact-table td{
+    border:1px solid #000;
+    padding:10px;
+    text-align:left;
+}
+
+.contact-table th{
+    background:#f0f0f0;
+    font-weight:bold;
+}
+
+.note{
+    margin-top:30px;
+    line-height:2;
+}
+
+@media print{
+    body{
+        background:white;
+    }
+
+    .left-panel{
+        display:none;
+    }
+
+    .container{
+        display:block;
+    }
+
+    .preview-sheet{
+        border:none;
+        box-shadow:none;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="panel left-panel">
+
+        <h1>工事仕様書入力</h1>
+
+        <h2>基本情報</h2>
+
+        <div class="form-group">
+            <label>工事名</label>
+            <input id="projectName" type="text">
+        </div>
+
+        <div class="form-group">
+            <label>施工場所</label>
+            <input id="location" type="text">
+        </div>
+
+        <div class="form-group">
+            <label>工期</label>
+            <input id="period" type="text">
+        </div>
+
+        <div class="form-group">
+            <label>責任者</label>
+            <input id="manager" type="text">
+        </div>
+
+        <h2>連絡体制</h2>
+
+        <h3 style="font-size:14px;margin-top:15px;margin-bottom:10px;">関連会社</h3>
+        <div id="companyContainer"></div>
+        <button class="btn-add" onclick="addCompany()">+ 関連会社を追加</button>
+
+        <h3 style="font-size:14px;margin-top:15px;margin-bottom:10px;">関係者</h3>
+        <div id="contactContainer"></div>
+        <button class="btn-add" onclick="addContact()">+ 関係者を追加</button>
+
+        <div style="margin-top:30px;">
+            <button class="btn-save" onclick="saveData()">保存</button>
+            <button class="btn-load" onclick="document.getElementById('fileInput').click()">
+                読込
+            </button>
+            <button class="btn-pdf" onclick="printPDF()">
+                PDF出力
+            </button>
+        </div>
+
+        <input
+            type="file"
+            id="fileInput"
+            style="display:none"
+            accept=".json"
+            onchange="loadData(event)"
+        >
+
+    </div>
+
+    <div class="panel">
+
+        <h2>リアルタイムプレビュー</h2>
+
+        <div class="preview-sheet">
+
+            <div class="preview-title">
+                工事仕様書
+            </div>
+
+            <table class="info-table">
+                <tr>
+                    <th>工事名</th>
+                    <td id="viewProjectName"></td>
+                </tr>
+
+                <tr>
+                    <th>施工場所</th>
+                    <td id="viewLocation"></td>
+                </tr>
+
+                <tr>
+                    <th>工期</th>
+                    <td id="viewPeriod"></td>
+                </tr>
+
+                <tr>
+                    <th>責任者</th>
+                    <td id="viewManager"></td>
+                </tr>
+            </table>
+
+            <div class="section-title">連絡体制</div>
+
+            <div class="section-title" style="font-size:14px;margin-top:15px;">関連会社</div>
+            <table class="contact-table" id="companyTablePreview">
+                <thead>
+                    <tr>
+                        <th>会社名</th>
+                        <th>担当者</th>
+                        <th>連絡先</th>
+                    </tr>
+                </thead>
+                <tbody id="companyTableBody">
+                </tbody>
+            </table>
+
+            <div class="section-title" style="font-size:14px;margin-top:15px;">関係者</div>
+            <table class="contact-table" id="contactTablePreview">
+                <thead>
+                    <tr>
+                        <th>名前</th>
+                        <th>役職</th>
+                        <th>連絡先</th>
+                    </tr>
+                </thead>
+                <tbody id="contactTableBody">
+                </tbody>
+            </table>
+
+            <div class="note">
+                本工事は工事仕様書に基づき施工するものとする。<br>
+                安全管理、品質管理および工程管理を適切に実施すること。
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const projectName =
+document.getElementById("projectName");
+
+const location =
+document.getElementById("location");
+
+const period =
+document.getElementById("period");
+
+const manager =
+document.getElementById("manager");
+
+let companies = [];
+let contacts = [];
+
+function addCompany(){
+    companies.push({name:"",person:"",phone:""});
+    renderCompanies();
+}
+
+function removeCompany(index){
+    companies.splice(index,1);
+    renderCompanies();
+}
+
+function renderCompanies(){
+    const container = document.getElementById("companyContainer");
+    container.innerHTML = "";
+    
+    companies.forEach((company,index)=>{
+        const row = document.createElement("div");
+        row.className = "contact-row";
+        row.innerHTML = `
+            <input 
+                type="text" 
+                placeholder="会社名" 
+                value="${company.name}"
+                onchange="companies[${index}].name=this.value;updatePreview()"
+            >
+            <input 
+                type="text" 
+                placeholder="担当者" 
+                value="${company.person}"
+                onchange="companies[${index}].person=this.value;updatePreview()"
+            >
+            <input 
+                type="text" 
+                placeholder="連絡先" 
+                value="${company.phone}"
+                onchange="companies[${index}].phone=this.value;updatePreview()"
+            >
+            <button class="btn-remove" onclick="removeCompany(${index})">削除</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function addContact(){
+    contacts.push({name:"",position:"",phone:""});
+    renderContacts();
+}
+
+function removeContact(index){
+    contacts.splice(index,1);
+    renderContacts();
+}
+
+function renderContacts(){
+    const container = document.getElementById("contactContainer");
+    container.innerHTML = "";
+    
+    contacts.forEach((contact,index)=>{
+        const row = document.createElement("div");
+        row.className = "contact-row";
+        row.innerHTML = `
+            <input 
+                type="text" 
+                placeholder="名前" 
+                value="${contact.name}"
+                onchange="contacts[${index}].name=this.value;updatePreview()"
+            >
+            <input 
+                type="text" 
+                placeholder="役職" 
+                value="${contact.position}"
+                onchange="contacts[${index}].position=this.value;updatePreview()"
+            >
+            <input 
+                type="text" 
+                placeholder="連絡先" 
+                value="${contact.phone}"
+                onchange="contacts[${index}].phone=this.value;updatePreview()"
+            >
+            <button class="btn-remove" onclick="removeContact(${index})">削除</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function updatePreview(){
+
+    document.getElementById("viewProjectName").textContent =
+    projectName.value;
+
+    document.getElementById("viewLocation").textContent =
+    location.value;
+
+    document.getElementById("viewPeriod").textContent =
+    period.value;
+
+    document.getElementById("viewManager").textContent =
+    manager.value;
+
+    // 関連会社テーブル更新
+    const companyTableBody =
+    document.getElementById("companyTableBody");
+    companyTableBody.innerHTML = "";
+    
+    if(companies.length > 0){
+        companies.forEach(company=>{
+            const row = companyTableBody.insertRow();
+            row.innerHTML = `
+                <td>${company.name}</td>
+                <td>${company.person}</td>
+                <td>${company.phone}</td>
+            `;
+        });
+    }else{
+        const row = companyTableBody.insertRow();
+        row.innerHTML = `<td colspan="3" style="text-align:center;color:#999;">未入力</td>`;
+    }
+
+    // 関係者テーブル更新
+    const contactTableBody =
+    document.getElementById("contactTableBody");
+    contactTableBody.innerHTML = "";
+    
+    if(contacts.length > 0){
+        contacts.forEach(contact=>{
+            const row = contactTableBody.insertRow();
+            row.innerHTML = `
+                <td>${contact.name}</td>
+                <td>${contact.position}</td>
+                <td>${contact.phone}</td>
+            `;
+        });
+    }else{
+        const row = contactTableBody.insertRow();
+        row.innerHTML = `<td colspan="3" style="text-align:center;color:#999;">未入力</td>`;
+    }
+}
+
+projectName.addEventListener("input",updatePreview);
+location.addEventListener("input",updatePreview);
+period.addEventListener("input",updatePreview);
+manager.addEventListener("input",updatePreview);
+
+function saveData(){
+
+    const data = {
+
+        projectName:projectName.value,
+        location:location.value,
+        period:period.value,
+        manager:manager.value,
+        companies:companies,
+        contacts:contacts
+
+    };
+
+    const blob =
+    new Blob(
+        [JSON.stringify(data,null,2)],
+        {type:"application/json"}
+    );
+
+    const url =
+    URL.createObjectURL(blob);
+
+    const a =
+    document.createElement("a");
+
+    a.href = url;
+    a.download = "工事仕様書データ.json";
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
+function loadData(event){
+
+    const file =
+    event.target.files[0];
+
+    if(!file) return;
+
+    const reader =
+    new FileReader();
+
+    reader.onload = function(e){
+
+        const data =
+        JSON.parse(e.target.result);
+
+        projectName.value =
+        data.projectName || "";
+
+        location.value =
+        data.location || "";
+
+        period.value =
+        data.period || "";
+
+        manager.value =
+        data.manager || "";
+
+        companies = data.companies || [];
+        contacts = data.contacts || [];
+
+        renderCompanies();
+        renderContacts();
+        updatePreview();
+    };
+
+    reader.readAsText(file);
+}
+
+function printPDF(){
+
+    window.print();
+}
+
+updatePreview();
+
+</script>
+
+</body>
+</html>
